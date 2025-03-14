@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Multiple LLMs</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin: auto;
+        }
+        
+        select,
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        select {
+            background: white;
+            color: black;
+        }
+        
+        input {
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        button {
+            background: #ff9800;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #e68900;
+        }
+        
+        .response-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            min-height: 50px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Test Multiple LLMs</h2>
+
+    <div class="container">
+        <label>Select Model for Response:</label>
+        <select id="model">
+            <option value="deepseek-r1:7b">DeepSeek R1 (7B)</option>
+            <option value="qwen2:latest">Qwen2</option>
+            <option value="phi:latest">Phi</option>
+            <option value="llama2:latest">Llama 2</option>
+            <option value="gemma:latest">Gemma</option>
+            <option value="mistral:latest">Mistral</option>
+        </select>
+
+
+        <h3>Upload PDF:</h3>
+        <input type="file" id="pdfUpload" />
+        <button onclick="uploadPDF()">Upload</button>
+        <p id="uploadStatus"></p>
+
+        <h3>Ask a Question:</h3>
+        <input type="text" id="query" placeholder="Enter your question..." />
+        <button onclick="sendQuery()">Ask</button>
+
+        <h3>Response:</h3>
+        <div class="response-box" id="response"></div>
+    </div>
+
+    <script>
+        function uploadPDF() {
+            var fileInput = document.getElementById("pdfUpload").files[0];
+            var uploadButton = document.querySelector("button[onclick='uploadPDF()']");
+
+            if (!fileInput) {
+                alert("Please select a PDF file.");
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append("pdf", fileInput);
+
+            // Change button text to "Uploading..."
+            uploadButton.innerText = "Uploading...";
+
+            fetch("/upload/", {
+                    method: "POST",
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("uploadStatus").innerText = data.message || data.error;
+
+                    // Change button text to "File Uploaded Successfully"
+                    uploadButton.innerText = "File Uploaded Successfully";
+                    uploadButton.style.background = "#4CAF50"; // Change color to green
+                    uploadButton.style.color = "white"; // White text for contrast
+                })
+                .catch(error => {
+                    console.error("Error uploading file:", error);
+                    uploadButton.innerText = "Upload Failed"; // Change text if upload fails
+                    uploadButton.style.background = "#f44336"; // Change color to red
+                });
+        }
+
+
+        function sendQuery() {
+            var model = document.getElementById("model").value;
+            var query = document.getElementById("query").value;
+
+            if (query.trim() === "") {
+                alert("Please enter a query!");
+                return;
+            }
+
+            fetch("/query/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        model: model,
+                        query: query
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("response").innerText = data.response;
+                })
+                .catch(error => console.error("Error processing query:", error));
+        }
+    </script>
+
+</body>
+
+</html>
